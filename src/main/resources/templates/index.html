@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+</head>
+<body>
+<h1>创建索引</h1>
+<form enctype="multipart/form-data" method="post" action="/lucene/addIndex">
+    <input type="file" name="file"/><br>
+    索引名称: <input type="text" name="indexName" value="test" title="索引名称"><br>
+    是否是中文: <input type="text" name="isChinese" value="1" title="是否是中文"><br>
+    需要分词化的列: <input type="text" name="textColumnNums" value="1,2,7,8,9,10" title="需要分词化的列"><br>
+    <input type="submit" value="创建索引"/>
+</form>
+<h1>更新索引</h1>
+<form enctype="multipart/form-data" method="post" action="/lucene/updateIndex">
+    <input type="file" name="file"/><br>
+    索引名称: <input type="text" name="indexName" value="test" title="索引名称"><br>
+    是否是中文: <input type="text" name="isChinese" value="1" title="是否是中文"><br>
+    关键词所在元素下标, 一般为id等唯一字段: <input type="text" name="keywordColumnNum" value="0" title="关键词所在元素下标, 一般为id等唯一字段"><br>
+    需要分词化的列: <input type="text" name="textColumnNums" value="1,2,7,8,9,10" title="需要分词化的列"><br>
+    <input type="submit" value="更新索引"/>
+</form>
+<h1>删除检索</h1>
+<form enctype="multipart/form-data" method="get" action="/lucene/deleteIndex">
+    索引名称: <input type="text" name="indexName" value="test" title="索引名称"><br>
+    是否是中文: <input type="text" name="isChinese" value="1" title="是否是中文"><br>
+    关键词字段名: <input type="text" name="fieldName" value="ID" title="关键词字段名"><br>
+    关键词: <input type="text" name="keyword" value="10185" title="关键词"><br>
+    <input type="submit" value="删除索引"/>
+</form>
+<h1>进行检索</h1>
+索引名称: <input id="indexName" type="text" name="indexName" value="test" title="索引名称"><br>
+关键字: <input id="keyword" type="text" oninput="suggest();" value="" title="keyword"><br>
+关键字所在的字段名(一个): <input id="searchFieldName" type="text" value="PALCE" title="searchFieldName"><br>
+需要返回的字段名, 以逗号隔开: <input id="resultFieldNames" type="text" value="ID,PALCE,NAME,ORG,UPDATE_TIME,X,Y" title="resultFieldNames"><br>
+是否是中文: <input id="isChinese" type="text" name="isChinese" value="1" title="是否是中文"><br>
+是否分页: <input id="paging" type="text" name="paging" value="0" title="是否分页"><br>
+显示条数: <input id="num" type="text" name="num" value="10" title="显示条数"><br>
+高亮前缀: <input id="preTag" type="text" name="preTag" value="" title="高亮前缀"><br>
+高亮后缀: <input id="postTag" type="text" name="postTag" value="" title="高亮后缀"><br>
+<button onclick="search();">搜索</button>
+<br>
+<h1>提示信息</h1>
+是否分页: <input id="suggestPaging" type="text" name="paging" value="0" title="提示信息是否分页"><br>
+显示条数: <input id="suggestNum" type="text" name="num" value="10" title="提示信息显示条数"><br>
+高亮前缀: <input id="suggestPreTag" type="text" name="preTag" value="<b><font color='red'>" title="提示信息高亮前缀"><br>
+高亮后缀: <input id="suggestPostTag" type="text" name="postTag" value="</font></b>" title="提示信息高亮后缀"><br>
+<div id="suggest">
+</div>
+<br>
+<script>
+    function search() {
+        var keyword = document.getElementById("keyword").value;
+        var searchFieldName = document.getElementById("searchFieldName").value;
+        var resultFieldNames = document.getElementById("resultFieldNames").value;
+        var indexName = document.getElementById("indexName").value;
+        var isChinese = document.getElementById("isChinese").value;
+        var paging = document.getElementById("paging").value;
+        var num = document.getElementById("num").value;
+        var preTag = document.getElementById("preTag").value;
+        var postTag = document.getElementById("postTag").value;
+        window.open("/lucene/search?indexName=" + indexName + "&paging=" + paging +
+            "&isChinese=" + isChinese + "&searchFieldName=" + searchFieldName +
+            "&resultFieldNames=" + resultFieldNames + "&keyword=" + keyword +
+            "&num=" + num + "&preTag=" + preTag + "&postTag=" + postTag);
+    }
+
+    function suggest() {
+        var keyword = document.getElementById("keyword").value;
+        var searchFieldName = document.getElementById("searchFieldName").value;
+        var indexName = document.getElementById("indexName").value;
+        var isChinese = document.getElementById("isChinese").value;
+        var suggestPaging = document.getElementById("suggestPaging").value;
+        var suggestNum = document.getElementById("suggestNum").value;
+        var suggestPreTag = document.getElementById("suggestPreTag").value;
+        var suggestPostTag = document.getElementById("suggestPostTag").value;
+        $.get("/lucene/suggest",
+            {
+                keyword: keyword,
+                searchFieldName: searchFieldName,
+                indexName: indexName,
+                isChinese: isChinese,
+                paging: suggestPaging,
+                num: suggestNum,
+                preTag: suggestPreTag,
+                postTag: suggestPostTag
+            },
+            function (result) {
+                var suggest = result.data;
+                var suggestDiv = document.getElementById("suggest");
+                suggestDiv.innerHTML  = "";
+                var html = "";
+                for (var i = 0; i < suggest.length; i++) {
+                    html += suggest[i] + "<br>";
+                }
+                suggestDiv.innerHTML  = html;
+            });
+    }
+</script>
+</body>
+</html>
