@@ -1,6 +1,7 @@
 package com.paulandcode.controller;
 
 import com.paulandcode.service.LuceneService;
+import com.paulandcode.utils.LuceneUtils;
 import com.paulandcode.utils.R;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -121,5 +122,17 @@ public class LuceneController {
     @RequestMapping(value = "suggest")
     public R suggest(@RequestParam Map<String, Object> params) {
         return R.ok().put("data", luceneService.suggest(params));
+    }
+
+    /**
+     * 增加权重, 可以在每次点击某一条记录时增加这条记录的权重
+     *
+     * @param params 参数
+     * @return com.paulandcode.utils.R
+     */
+    @RequestMapping(value = "addWeight")
+    public R addWeight(@RequestParam Map<String, Object> params) {
+
+        return R.ok().put("data", LuceneUtils.addWeight(params));
     }
 }
