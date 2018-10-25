@@ -55,6 +55,67 @@ public class LuceneUtils {
     private static RedisTemplate<String, Object> redisTemplate;
 
     /**
+     * 增加权重
+     * 
+     * @param params 参数
+     * @return boolean
+     */
+    public static boolean addWeight(Map<String, Object> params) {
+        String indexName = params.get("indexName").toString();
+        String keyFieldName = params.get("keyFieldName").toString();
+        String keyFieldValue = params.get("keyFieldValue").toString();
+        String fieldName = params.get("fieldName").toString();
+        boolean isChinese = "1".equals(params.get("isChinese").toString());
+        boolean isText = "1".equals(params.get("isText").toString());
+        IndexReader indexReader = getIndexReader(indexName);
+        IndexWriter indexWriter = getIndexWriter(indexName, isChinese);
+        IndexSearcher searcher = new IndexSearcher(indexReader);
+        Analyzer analyzer;
+        // 如果是中文, 就用中文分词器, 否则使用西文分词器
+        if (isChinese) {
+            analyzer = new SmartChineseAnalyzer();
+        } else {
+            analyzer = new SimpleAnalyzer();
+        }
+        try {
+            // 通过唯一主键查询
+            Query query = new QueryParser(keyFieldName, analyzer).parse(keyFieldValue);
+            ScoreDoc[] scoreDocs = searcher.search(query, 1).scoreDocs;
+            if (scoreDocs.length == 0) {
+                return false;
+            }
+            Document doc = searcher.doc(scoreDocs[0].doc);
+            IndexableField indexableField = doc.getField(fieldName);
+            String value = indexableField.stringValue();
+            float boost = indexableField.boost();
+            IndexableField field;
+            if (isText) {
+                TextField textField = new TextField(fieldName, value, Field.Store.YES);
+                textField.setBoost(boost + 0.1f);
+                field = textField;
+            } else {
+                StringField stringField = new StringField(fieldName, value, Field.Store.YES);
+                stringField.setBoost(boost + 0.1f);
+                field = stringField;
+            }
+            // 由于没有更新, 所以先删除这个领域, 后添加新领域
+            doc.removeField(fieldName);
+            doc.add(field);
+            indexWriter.updateDocument(new Term(keyFieldName, doc.get(keyFieldName)), doc);
+        } catch (IOException | ParseException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                indexWriter.close();
+                indexReader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return true;
+    }
+
+    /**
      * 将Spring的Been注入给静态成员变量
      *
      * @param redisTemplate Spring注入的Redis模板Been
